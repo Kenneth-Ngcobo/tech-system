@@ -1,0 +1,305 @@
+<template>
+<div>
+    <validation-observer v-slot="{handleSubmit}">
+    <form @submit.prevent="handleSubmit(addTest)">
+        <span class="close" @click="$emit('closeModal')">&times;</span>
+        <center>
+             <h4 v-if="action == 'add'">Test Request</h4>
+             <h4 v-if="action == 'modify'">Modify Test</h4>
+        </center>
+        <div class="col-lg-6 float-left">
+            <div class="form-group">
+                <validation-provider  rules="required" v-slot="{ errors }">
+                <label class="col-md-4">Type of Test</label>
+                <select style="height:30px" v-model="test.test">
+                    <option value="">Please select</option>
+                    <option value="Photometric">Photometric</option>
+                    <option value="Thermal">Thermal</option>
+                    <option value="IP">IP</option>
+                    <option value="Electrical">Electrical</option>
+                    <option value="Dummy">Dummy</option>
+                </select>
+                 <span class="required">{{ errors[0] }}</span>
+                </validation-provider>
+            </div>
+            <div class="form-group">
+                <validation-provider  rules="required" v-slot="{ errors }">
+                <label class="col-md-4">Product Name</label>
+                <input type="text" v-model="test.product_name" @change="refreshData">
+                <span class="required">{{ errors[0] }}</span>
+                </validation-provider>
+            </div>
+             <div class="form-group formfield">
+                <validation-provider  rules="required" v-slot="{ errors }">
+                <label class="col-md-4">Reason For Test</label>
+                <textarea name="" id="" style="width:50%" rows="3" v-model="test.reason"></textarea>
+                <span class="required">{{ errors[0] }}</span>
+                </validation-provider>
+            </div>
+             <div class="form-group">
+                <label class="col-md-4">Length/Dimensions (mm)</label>
+                
+                <input type="text" v-model="test.length">
+            </div>
+            <div class="form-group">
+                <label class="col-md-4">Board</label>
+                 <select style="height:30px" v-model="test.board" @change="selectLED()">
+                    <option value="">Please select</option>
+                    <option :value="board.board_name" v-for="board in boards" :key="board.id">{{board.board_name}}</option>
+                    <!--option value="RL18">RL18 10mm</option>
+                    <option value="RL18">RL18 20mm</option>
+                    <option value="RL21">RL21</option>
+                    <option value="Zhaga">Zhaga</option>
+                    <option value="Olympia">Olympia</option>
+                    <option value="Argo">Argo</option>
+                    <option value="Lumina 12 LED">Lumina 12 LED</option>
+                    <option value="Lumina 36 LED">Lumina 36 LED</option>
+                    <option value="Dega">Dega</option>
+                    <option value="COB">COB</option>
+                    <option value="Other">Other</option-->
+                </select>
+            </div>
+
+            <div class="form-group" v-if="test.board == 'COB' || test.board == 'Other'">
+                <validation-provider  rules="required" v-slot="{ errors }">
+                <label class="col-md-4">Specify</label>
+                <input type="text"  v-model="test.other" @change="refreshData">
+                <span class="required">{{ errors[0] }}</span>
+                </validation-provider>
+            </div>
+
+             <div class="form-group">
+                <validation-provider  rules="required" v-slot="{ errors }">
+                <label class="col-md-4">LED</label>
+                <input type="text"  v-model="test.led">
+                <span class="required">{{ errors[0] }}</span>
+                </validation-provider>
+            </div>
+            
+            
+           
+        </div>
+        <div class="col-lg-6 float-right">
+            <div class="form-group">
+                 <validation-provider  rules="required" v-slot="{ errors }">
+                <label class="col-md-4">CCT</label>
+                 <select style="height:30px" v-model="test.cct">
+                    <option value="">Please select</option>
+                    <option value="6000">6000</option>
+                    <option value="5700">5700</option>
+                    <option value="4000">4000</option>
+                    <option value="3500">3500</option>
+                    <option value="3000">3000</option>
+                    <option value="2700">2700</option>
+                </select>
+                <span class="required">{{ errors[0] }}</span>
+                </validation-provider>
+            </div>
+            <div class="form-group">
+                <label class="col-md-4">LED Bin</label>
+                <input type="text" v-model="test.led_bin">
+            </div>
+            
+            <div class="form-group">
+                <validation-provider  rules="required" v-slot="{ errors }">
+                <label class="col-md-4">Wattage (W)</label>
+                <input type="text"  v-model="test.wattage">
+                <span class="required">{{ errors[0] }}</span>
+                </validation-provider>
+            </div>
+            <div class="form-group">
+                <label class="col-md-4">Current (mA)</label>
+                <input type="text"  v-model="test.current">
+            </div>
+            <div class="form-group">
+                <label class="col-md-4">Lens/Angle/Cover</label>
+                <input type="text" v-model="test.lens_cover">
+            </div>
+           
+             <!--div class="form-group">
+                <label class="col-md-4">Priority</label>
+                <select style="width:250px; height:30px" v-model="test.priority">
+                    <option value="">Please select</option>
+                    <option value="Normal">Normal</option>
+                    <option value="Urgent">Urgent</option>
+                    <option value="Super Urgent">Super Urgent</option>
+                
+                </select>
+            </div-->
+             <div class="form-group">
+                 <validation-provider  rules="required" v-slot="{ errors }">
+                <label class="col-md-4">Date Required</label>
+                <input type="date" :min="today()" v-model="test.date_required">
+                <span class="required">{{ errors[0] }}</span>
+                </validation-provider>
+            </div>
+        </div>
+        <b-button type="submit" v-if="action == 'add'" style="margin-left:45%" >Submit</b-button>
+        <b-button v-if="action == 'modify'" style="margin-top:1%"  @click="modifyTest()">Save</b-button>
+        
+    </form> 
+    </validation-observer>
+    
+    <!--datalist id="product-name">
+        <option v-for="(product,index) in filter('name')" :key="index">{{product}}</option>
+    </datalist>
+    <datalist id="current">
+        <option v-for="(product,index) in filter2('current')" :key="index">{{product}}</option>
+    </datalist>
+    <datalist id="beam">
+         <option v-for="(product,index) in filter2('beam_or_cover')" :key="index">{{product}}</option>
+    </datalist>
+    <datalist id="modules">
+         <option v-for="(product,index) in filter2('modules')" :key="index">{{product}}</option>
+    </datalist--> 
+
+</div>
+</template>
+
+<script>
+import { ValidationProvider, ValidationObserver, extend } from 'vee-validate';
+import { required } from 'vee-validate/dist/rules';
+extend('required', {
+  ...required,
+  message: 'Required'
+});
+export default {
+    components: {
+        ValidationProvider,
+        ValidationObserver
+    },
+    props: ['action', 'testObj'],
+
+    data() {
+        return {
+           test: {
+                test: '',
+                product_name: '',
+                length: '',
+                board: '',
+                led: '',
+                cct: '',
+                led_bin: '',
+                wattage: '',
+                current: '',
+                lens_cover: '',
+                reason: '',
+                priority: null,
+                date_required: '',
+                other: '',
+
+            },
+            products: [],
+            boards: [],
+            original_test: {}
+
+        }
+    },
+    methods: {
+
+        selectLED() {
+            this.test.led = this.boards.find(b => b.board_name == this.test.board).led
+        },
+
+        async modifyTest() {
+            let changed = false
+            let changes = {}
+            //this.test.updated_by = this.$auth.user.username
+            //this.test.email = this.$auth.user.email
+            if(this.test.board == 'Other' || this.test.board == 'COB') {
+                this.test.board = this.test.other
+            }
+            for(var key in this.test) {
+                if(this.test[key] != this.original_test[key]) {
+                    changed = true
+                    changes[key] = this.test[key]
+                    console.log(`${key} has changed from ${this.original_test[key]} to ${this.test[key]}`)
+                    
+                 
+                  
+                }
+            }
+            if(changed) {
+                changes['product_name'] = this.test.product_name
+                changes['test'] = this.test.test
+                changes['updated_by'] = this.$auth.user.username
+                changes['id'] = this.test.id
+                await this.$axios.$post('/modify_test_details', changes)
+            }
+            this.$emit('closeModal')
+        },
+
+
+        async addTest() {
+           
+            this.test.person = this.$auth.user.username
+            this.test.email = this.$auth.user.email
+            if(this.test.board == 'Other' || this.test.board == 'COB') {
+                this.test.board = this.test.other
+            }
+            await this.$axios.$post('/testing', this.test)
+            this.$emit('closeModal')
+        },
+
+        today() {
+            let newDate = new Date()
+            let dt = ('0' + (newDate.getDate())).slice(-2)
+            let mth = ('0' + (newDate.getMonth()+1)).slice(-2)
+            let yr = (newDate.getFullYear()).toString()
+            return (yr + '-' + mth + '-' + dt)
+        },
+
+        refreshData() {
+
+        },
+
+
+
+    },
+    
+    created: async function() {
+        //this.products = await this.$axios.$get('/products')
+        this.boards = await this.$axios.$get('/boards')
+        this.boards.push({board_name: 'Other', led: ''})
+       
+        console.log('this.testObj = ', this.testObj)
+        if(this.testObj) {
+            this.test = this.testObj
+            this.original_test = Object.assign({}, this.test)
+        }
+    }
+    
+}
+</script>
+
+<style scoped>
+
+.formfield * {
+  vertical-align: middle;
+}
+
+label {
+    font-weight:550; 
+}
+
+ input, select {
+     width: 50%;
+ }
+/* The Close Button */
+.close {
+  color: rgb(66, 63, 63);
+  float: right;
+  font-size: 45px;
+  font-weight: bold;
+}
+.close:hover,
+.close:focus {
+  color: black;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.required {
+    color: red
+}
+</style>
